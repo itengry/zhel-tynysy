@@ -6,46 +6,45 @@
 <link rel="icon" href="data:,">
 <title>Жел тынысы — созерцательная степь</title>
 <style>
-  :root { color-scheme:dark; --ui:rgba(242,236,218,.94); }
+  :root { color-scheme:dark; --ink:#17242a; --cream:#f3dca7; --sand:#bd8952; --sky:#6f91a5; }
   * { box-sizing:border-box; }
-  html, body { width:100%; height:100%; margin:0; overflow:hidden; overscroll-behavior:none; background:#1d2930; font-family:ui-serif,Georgia,serif; }
+  html,body { width:100%; height:100%; margin:0; overflow:hidden; overscroll-behavior:none; background:var(--ink); font-family:"Courier New",ui-monospace,monospace; }
   body { min-height:100svh; min-height:100dvh; touch-action:none; -webkit-tap-highlight-color:transparent; }
-  #world { position:fixed; inset:0; overflow:hidden; isolation:isolate; background:#6d8592; }
-  .biome { position:absolute; inset:-4%; background-position:center; background-size:cover; opacity:0; transform:scale(1.055) translate3d(var(--pan,0),0,0); transition:opacity 9s ease-in-out; will-change:opacity,transform; }
+  #world { position:fixed; inset:0; overflow:hidden; isolation:isolate; background:var(--sky); image-rendering:pixelated; image-rendering:crisp-edges; }
+  #world::after { content:""; position:absolute; z-index:30; inset:6px; border:3px solid rgba(23,36,42,.48); pointer-events:none; }
+  .biome { position:absolute; inset:-2%; opacity:0; background-position:center; background-size:cover; transform:translate3d(var(--pan,0),0,0) scale(1.04); transition:opacity 0s steps(1); will-change:opacity,transform; image-rendering:pixelated; image-rendering:crisp-edges; }
   .biome.active { opacity:1; }
-  #tone { position:absolute; inset:0; z-index:3; pointer-events:none; background:linear-gradient(180deg,rgba(18,28,38,.04),transparent 46%,rgba(31,36,25,.12)); mix-blend-mode:multiply; }
-  #mist { position:absolute; left:-15%; right:-15%; top:39%; height:18%; z-index:4; opacity:.16; filter:blur(22px); background:radial-gradient(ellipse at center,rgba(230,239,232,.72),transparent 66%); animation:breathe 13s ease-in-out infinite alternate; pointer-events:none; }
-  #riderWrap { position:absolute; z-index:7; left:27%; bottom:9.5%; width:clamp(230px,29vw,470px); aspect-ratio:418/470; transform:translateX(-50%); filter:drop-shadow(0 14px 10px rgba(22,26,19,.32)); transition:left 1.4s ease,filter 2s ease; }
-  #rider { width:100%; height:100%; object-fit:contain; object-position:center bottom; user-select:none; -webkit-user-drag:none; }
-  #riderWrap.walking { animation:riderBreath 1.35s ease-in-out infinite; }
-  #riderWrap.trotting { animation:riderBreath .72s ease-in-out infinite; }
-  #foregroundShade { position:absolute; inset:auto 0 0; height:26%; z-index:8; pointer-events:none; background:linear-gradient(0deg,rgba(12,20,17,.14),transparent); }
-  #grain { position:absolute; inset:0; z-index:9; opacity:.05; pointer-events:none; mix-blend-mode:soft-light; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E"); }
-  #intro { position:absolute; inset:0; z-index:20; display:grid; place-content:center; padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left)); text-align:center; background:linear-gradient(180deg,rgba(13,23,29,.26),rgba(13,23,29,.1)); transition:opacity 2.2s ease; pointer-events:none; text-shadow:0 2px 18px rgba(10,19,25,.55); }
+  #mist,#grain,#foregroundShade { display:none; }
+  #tone { position:absolute; z-index:3; inset:0; pointer-events:none; box-shadow:inset 0 -12vh 0 rgba(23,36,42,.12); }
+  #riderWrap { position:absolute; z-index:7; left:27%; bottom:8%; width:clamp(192px,24vw,288px); aspect-ratio:3/4; transform:translateX(-50%); filter:drop-shadow(6px 6px 0 rgba(23,36,42,.42)); }
+  #rider { width:100%; height:100%; object-fit:contain; object-position:center bottom; image-rendering:pixelated; image-rendering:crisp-edges; user-select:none; -webkit-user-drag:none; }
+  #riderWrap.walking { animation:riderStep .9s steps(2,end) infinite; }
+  #riderWrap.trotting { animation:riderStep .44s steps(2,end) infinite; }
+  #intro { position:absolute; inset:0; z-index:20; display:grid; place-content:center; padding:24px; text-align:center; background:rgba(23,36,42,.24); transition:opacity .4s steps(4,end); pointer-events:none; }
   #intro.hidden { opacity:0; }
-  #intro h1 { margin:0; font-size:clamp(36px,6vw,84px); font-weight:400; letter-spacing:.08em; color:#f3ead1; white-space:nowrap; }
-  #intro p { max-width:46ch; margin:13px auto 0; font:400 clamp(13px,1.35vw,18px)/1.55 ui-sans-serif,system-ui,sans-serif; letter-spacing:.14em; color:rgba(247,240,220,.8); }
-  #hint { position:absolute; z-index:21; left:50%; bottom:max(4%,env(safe-area-inset-bottom)); transform:translateX(-50%); padding:9px 15px; border:1px solid rgba(255,255,255,.15); border-radius:999px; background:rgba(17,29,33,.28); backdrop-filter:blur(12px); color:var(--ui); font:500 12px/1.2 ui-sans-serif,system-ui,sans-serif; letter-spacing:.08em; opacity:0; transition:opacity .5s ease; white-space:nowrap; pointer-events:none; }
-  #hint.show { opacity:.86; }
-  #status { position:absolute; z-index:21; top:max(3%,env(safe-area-inset-top)); right:max(3%,env(safe-area-inset-right)); max-width:70vw; color:rgba(245,238,218,.75); font:500 11px ui-sans-serif,system-ui,sans-serif; letter-spacing:.15em; text-align:right; text-transform:uppercase; opacity:.72; transition:opacity .6s; }
-  #controls { position:absolute; z-index:24; left:50%; bottom:max(18px,env(safe-area-inset-bottom)); display:none; gap:8px; align-items:center; transform:translate(-50%,10px); opacity:0; transition:opacity .6s ease,transform .6s ease; }
-  #controls.ready { transform:translate(-50%,0); opacity:.92; }
-  #controls.ready.resting { opacity:.28; }
-  #controls button { min-width:54px; min-height:54px; padding:0 16px; border:1px solid rgba(255,255,255,.22); border-radius:999px; background:rgba(15,28,31,.44); box-shadow:0 8px 30px rgba(8,16,18,.16); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); color:var(--ui); font:600 18px ui-sans-serif,system-ui,sans-serif; touch-action:manipulation; }
-  #controls button[data-action="auto"] { min-width:72px; font-size:11px; letter-spacing:.12em; text-transform:uppercase; }
-  #controls button.active { background:rgba(205,184,132,.3); border-color:rgba(249,229,179,.52); }
-  #controls button:active { transform:scale(.94); background:rgba(224,204,153,.36); }
-  @keyframes riderBreath { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-2px)} }
-  @keyframes breathe { from{opacity:.09;transform:translateX(-1%)} to{opacity:.22;transform:translateX(1%)} }
+  #intro h1 { margin:0; color:var(--cream); font-size:clamp(36px,6vw,78px); font-weight:900; line-height:1; letter-spacing:.04em; text-shadow:4px 4px 0 var(--ink),8px 8px 0 rgba(23,36,42,.35); white-space:nowrap; }
+  #intro p { max-width:46ch; margin:18px auto 0; padding:8px 12px; border:3px solid var(--ink); background:var(--cream); color:var(--ink); font:700 clamp(11px,1.25vw,16px)/1.35 "Courier New",monospace; letter-spacing:.08em; box-shadow:4px 4px 0 var(--ink); }
+  #hint,#status { position:absolute; z-index:21; border:3px solid var(--ink); background:var(--cream); color:var(--ink); box-shadow:4px 4px 0 var(--ink); font-weight:700; text-transform:uppercase; }
+  #hint { left:50%; bottom:max(4%,env(safe-area-inset-bottom)); transform:translateX(-50%); padding:8px 12px; font-size:11px; letter-spacing:.04em; opacity:0; transition:opacity .15s steps(1); white-space:nowrap; pointer-events:none; }
+  #hint.show { opacity:1; }
+  #status { top:max(3%,env(safe-area-inset-top)); right:max(3%,env(safe-area-inset-right)); max-width:70vw; padding:7px 9px; font-size:10px; letter-spacing:.08em; text-align:right; opacity:1; }
+  #controls { position:absolute; z-index:24; left:50%; bottom:max(18px,env(safe-area-inset-bottom)); display:none; gap:8px; align-items:center; transform:translateX(-50%); opacity:0; transition:opacity .15s steps(1); }
+  #controls.ready { opacity:1; }
+  #controls.ready.resting { opacity:.55; }
+  #controls button { min-width:54px; min-height:54px; padding:0 14px; border:3px solid var(--ink); border-radius:0; background:var(--cream); color:var(--ink); box-shadow:4px 4px 0 var(--ink); font:900 18px "Courier New",monospace; touch-action:manipulation; }
+  #controls button[data-action="auto"] { min-width:72px; font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+  #controls button.active { background:var(--sand); color:#fff4cf; }
+  #controls button:active { transform:translate(4px,4px); box-shadow:none; }
+  @keyframes riderStep { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-4px)} }
   @media (max-aspect-ratio:4/3) {
-    #riderWrap { left:32%; width:clamp(164px,46vw,270px); bottom:12%; }
-    #intro h1 { font-size:clamp(34px,10vw,54px); letter-spacing:.04em; }
-    #intro p { max-width:28ch; font-size:clamp(11px,3.4vw,15px); }
+    #riderWrap { left:34%; width:clamp(168px,44vw,240px); bottom:10%; }
+    #intro h1 { font-size:clamp(34px,10vw,52px); }
+    #intro p { max-width:30ch; font-size:clamp(10px,3vw,14px); }
   }
   @media (pointer:coarse) {
     #controls { display:flex; }
     #hint { display:none; }
-    #status { top:max(18px,env(safe-area-inset-top)); right:max(16px,env(safe-area-inset-right)); font-size:10px; }
+    #status { top:max(18px,env(safe-area-inset-top)); right:max(16px,env(safe-area-inset-right)); }
   }
   @media (pointer:coarse) and (orientation:landscape) {
     #controls { bottom:max(10px,env(safe-area-inset-bottom)); }
@@ -75,17 +74,16 @@
 </main>
 <script>
 (() => {
-  const root = 'assets/';
-  const biomeFormat = document.createElement('canvas').toDataURL('image/webp').startsWith('data:image/webp') ? 'webp' : 'png';
+  const root = 'assets/pixel/';
   const biomes = [
-    root + `biomes/biome-open-steppe.${biomeFormat}`,
-    root + `biomes/biome-semi-desert.${biomeFormat}`,
-    root + `biomes/biome-river-grove.${biomeFormat}`
+    root + 'biomes/biome-open-steppe.png',
+    root + 'biomes/biome-semi-desert.png',
+    root + 'biomes/biome-river-grove.png'
   ];
-  const walkFrames = [0,1,2,3].map(n => `${root}characters/frames/frame-0${n}.png`);
-  const trotFrames = [4,5].map(n => `${root}characters/frames/frame-0${n}.png`);
-  const idleFrame = `${root}characters/frames/frame-06.png`;
-  const patFrame = `${root}characters/frames/frame-07.png`;
+  const walkFrames = [0,1,2,3].map(n => `${root}frames/frame-0${n}.png`);
+  const trotFrames = [4,5].map(n => `${root}frames/frame-0${n}.png`);
+  const idleFrame = `${root}frames/frame-06.png`;
+  const patFrame = `${root}frames/frame-07.png`;
   [...walkFrames, ...trotFrames, idleFrame, patFrame].forEach(src => { const i = new Image(); i.src = src; });
 
   const world = document.querySelector('#world');
