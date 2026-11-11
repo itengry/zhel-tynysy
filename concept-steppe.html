@@ -1,0 +1,71 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Сарыарқа — concept frame</title><style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080d16;display:grid;place-items:center}canvas{width:min(100vw,177.777vh);height:min(100vh,56.25vw);image-rendering:pixelated;image-rendering:crisp-edges}</style></head><body><canvas id="art" width="960" height="540"></canvas><script>
+'use strict';
+const c=document.querySelector('#art'),g=c.getContext('2d'),W=960,H=540;g.imageSmoothingEnabled=false;
+let seed=73129;function R(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}const lerp=(a,b,t)=>a+(b-a)*t;
+function hx(s){let n=parseInt(s.slice(1),16);return[n>>16,(n>>8)&255,n&255]}function mix(a,b,t){a=hx(a);b=hx(b);return`rgb(${lerp(a[0],b[0],t)|0},${lerp(a[1],b[1],t)|0},${lerp(a[2],b[2],t)|0})`}
+function rect(x,y,w,h,col){g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h))}function poly(p,col){g.fillStyle=col;g.beginPath();g.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length;i++)g.lineTo(p[i][0],p[i][1]);g.closePath();g.fill()}
+function circle(x,y,r,col){g.fillStyle=col;for(let yy=-r;yy<=r;yy++){let q=Math.floor(Math.sqrt(r*r-yy*yy));g.fillRect(x-q,y+yy,q*2+1,1)}}
+const S=['#14233d','#26385a','#5a5472','#a8646c','#e49262','#f6bf72','#ffd995'];
+// sky: subtle hand-banded color, never blurred
+for(let y=0;y<322;y++){let q=y/322,u=q*(S.length-1),i=Math.min(S.length-2,Math.floor(u));rect(0,y,W,1,mix(S[i],S[i+1],u-i))}
+// warm horizon bloom
+for(let y=220;y<330;y++){let a=1-Math.abs(y-286)/70;g.globalAlpha=Math.max(0,a)*.16;rect(0,y,W,1,'#ffe59c')}g.globalAlpha=1;
+// dithered atmosphere
+for(let y=115;y<315;y+=3)for(let x=(y%6);x<W;x+=6)if(R()>.83){g.globalAlpha=.10+(y/315)*.08;rect(x,y,2,1,'#fff2be')}g.globalAlpha=1;
+// sun and halo in stepped rings
+circle(238,244,52,'#d77e59');circle(238,244,45,'#ef9e62');circle(238,244,36,'#ffc879');circle(238,244,28,'#ffe39a');
+// long pixel clouds
+function cloud(x,y,w,col){g.globalAlpha=.28;rect(x,y+8,w,5,col);rect(x+18,y+3,w*.55,6,col);rect(x+w*.46,y,w*.22,7,col);rect(x+w*.68,y+5,w*.24,6,col);g.globalAlpha=1;rect(x+25,y+11,w*.62,2,mix('#c47772','#f6c58d',.55))}
+cloud(52,92,164,'#9e8292');cloud(612,72,210,'#8b7088');cloud(720,164,132,'#d3a08b');cloud(372,142,98,'#c88b84');
+// distant birds, each a 3-pixel calligraphic mark
+for(let i=0;i<11;i++){let x=662+i*18+R()*9,y=115+Math.sin(i*.8)*12+R()*5;rect(x,y,4,2,'#273047');rect(x+4,y-2,4,2,'#273047')}
+// mountain ranges
+function ridge(base,amp,step,phase,col){let p=[[-step,H]];for(let x=-step;x<=W+step;x+=step){let y=base-Math.sin(x*.011+phase)*amp-Math.sin(x*.027-phase)*amp*.3-Math.abs(Math.sin(x*.004+phase))*amp*.55;p.push([x,Math.round(y)])}p.push([W+step,H]);poly(p,col)}
+ridge(303,26,12,.4,'#777082');ridge(319,18,10,2.2,'#5b6070');
+// snow facets on far peaks
+poly([[68,286],[122,254],[166,282],[145,274],[121,266],[102,278]],'#a6a0a1');poly([[718,286],[770,251],[823,288],[792,272],[770,264],[748,278]],'#aaa2a0');
+// steppe planes
+ridge(342,20,10,4.1,'#58644f');ridge(378,30,9,1.5,'#435943');ridge(425,38,8,3.7,'#304b37');
+// sinuous river: dark banks, pale water, broken reflections
+poly([[474,303],[491,303],[513,337],[551,374],[589,426],[660,540],[435,540],[500,438],[515,389],[495,350]],'#253a35');
+poly([[480,304],[487,304],[507,339],[542,378],[566,426],[616,540],[464,540],[513,437],[528,389],[503,348]],'#b6a77c');
+poly([[484,306],[489,306],[503,340],[530,378],[546,426],[572,540],[493,540],[524,437],[538,389],[509,348]],'#f0c87c');
+for(let i=0;i<28;i++){let y=333+i*7,w=5+i*1.5,x=505+(i*i*.07);if(i%3!==1)rect(x-w/2,y,w,2,i<15?'#ffe19a':'#f5d188')}
+// field texture: three depth passes
+function field(count,y0,y1,colors,h0,h1){for(let i=0;i<count;i++){let y=lerp(y0,y1,R()),d=(y-y0)/(y1-y0),x=R()*W,h=lerp(h0,h1,d)*(0.55+R()*.8),s=Math.round(Math.sin(x*.07+y*.03)*lerp(1,5,d));let col=colors[(R()*colors.length)|0];rect(x,y-h,1+(d>.72?1:0),h,col);if(R()>.8)rect(x+s,y-h-2,3,2,'#d9b65b')}}
+field(620,312,388,['#7f8450','#9a8a4b','#c3a44e','#5f7046'],2,13);field(950,370,470,['#566d3e','#6f7f43','#9b8b42','#c49e45','#344f38'],5,24);
+// balbal: quiet cultural anchor
+rect(126,326,22,46,'#3b493f');rect(129,316,17,14,'#566056');rect(132,320,3,3,'#202b2a');rect(140,320,3,3,'#202b2a');rect(133,331,9,2,'#29352f');rect(130,344,14,3,'#66705f');rect(121,371,34,5,'#293a31');
+// rider and horse — small, legible, not dominant
+function rider(x,y){const o='#171b22',d='#3a2a2c',b='#704238',hi='#b36643',teal='#245f67',gold='#d39b48',skin='#c67a51';
+ // long windward tail
+ poly([[x-42,y-27],[x-62,y-34],[x-83,y-30],[x-65,y-25],[x-85,y-20],[x-57,y-20],[x-38,y-17]],o);
+ // rear legs
+ rect(x-27,y-13,7,36,d);rect(x-29,y+21,7,24,o);rect(x+20,y-13,7,36,d);rect(x+21,y+20,7,25,o);rect(x-33,y+43,13,4,o);rect(x+19,y+43,14,4,o);
+ // body and warm highlight
+ poly([[x-46,y-33],[x-28,y-42],[x+21,y-42],[x+42,y-31],[x+35,y-13],[x+21,y-6],[x-31,y-7],[x-48,y-17]],o);poly([[x-39,y-30],[x-23,y-36],[x+19,y-36],[x+34,y-28],[x+29,y-16],[x+15,y-11],[x-29,y-12],[x-41,y-19]],b);rect(x-22,y-34,35,5,hi);
+ // neck and head
+ poly([[x+24,y-37],[x+34,y-64],[x+49,y-82],[x+59,y-77],[x+51,y-46],[x+38,y-22]],o);poly([[x+33,y-40],[x+40,y-62],[x+49,y-75],[x+54,y-71],[x+47,y-47],[x+40,y-29]],b);poly([[x+46,y-82],[x+59,y-88],[x+77,y-84],[x+84,y-77],[x+76,y-69],[x+55,y-70]],o);rect(x+57,y-82,20,7,b);rect(x+75,y-78,15,5,o);rect(x+52,y-93,4,12,o);rect(x+64,y-93,4,10,o);rect(x+72,y-79,3,3,'#f4c769');
+ // saddle
+ rect(x-11,y-43,34,8,gold);rect(x-18,y-38,43,7,teal);rect(x-4,y-46,22,4,'#f0c46b');
+ // rider and cloak
+ rect(x-6,y-51,7,17,o);rect(x+14,y-51,7,17,o);poly([[x-10,y-88],[x+3,y-102],[x+20,y-96],[x+27,y-58],[x+15,y-48],[x-8,y-55]],teal);rect(x+1,y-91,19,19,'#2c7377');rect(x+5,y-96,15,5,gold);poly([[x-6,y-90],[x-28,y-84],[x-54,y-69],[x-35,y-57],[x-5,y-63]],'#315c68');rect(x-38,y-74,28,4,'#4f8390');
+ // head and saukele-like hat silhouette
+ rect(x+3,y-119,15,17,skin);rect(x,y-121,21,6,o);poly([[x+4,y-123],[x+8,y-137],[x+16,y-137],[x+21,y-123]],o);rect(x+9,y-140,6,4,gold);
+ // arm/reins
+ poly([[x+18,y-88],[x+32,y-82],[x+47,y-69],[x+43,y-64],[x+27,y-74]],o);rect(x+42,y-68,8,4,skin);g.strokeStyle=gold;g.lineWidth=1;g.beginPath();g.moveTo(x+48,y-66);g.lineTo(x+71,y-73);g.stroke();
+}
+rider(708,377);
+// foreground mass and wind-combed blades
+poly([[0,447],[130,428],[244,454],[348,436],[465,468],[584,440],[702,462],[820,435],[960,451],[960,540],[0,540]],'#20372e');
+field(1250,435,540,['#263f31','#315036','#3e5a36','#576d3d','#806f35','#b18b3f'],8,37);
+// foreground feather-grass seed heads
+for(let i=0;i<115;i++){let x=R()*W,y=470+R()*80,h=18+R()*42,lean=8+R()*17;g.strokeStyle=R()>.45?'#bfa15a':'#6f783f';g.lineWidth=1;g.beginPath();g.moveTo(x,y);g.lineTo(x+lean,y-h);g.stroke();if(R()>.36){for(let k=0;k<4;k++)rect(x+lean+k*2,y-h+k*2,3,1,'#d6bd73')}}
+// sparse red tulips as tiny accents
+for(let i=0;i<18;i++){let x=30+R()*900,y=455+R()*70;rect(x,y-7,1,8,'#446138');rect(x-2,y-9,5,3,R()>.5?'#c6533f':'#de704a')}
+// restrained film-grain pixels
+for(let i=0;i<4200;i++){let x=(R()*W)|0,y=(R()*H)|0;g.globalAlpha=.025+R()*.035;rect(x,y,1,1,R()>.5?'#fff4c9':'#0b1520')}g.globalAlpha=1;
+// tiny signature glyph only, no title/UI
+rect(925,510,18,2,'#cfa75c');rect(934,501,2,18,'#cfa75c');
+window.__ART_READY=true;
+</script></body></html>

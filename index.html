@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="icon" href="data:,">
+<title>Жел тынысы — созерцательная степь</title>
+<style>
+  :root { color-scheme:dark; --ui:rgba(242,236,218,.94); }
+  * { box-sizing:border-box; }
+  html, body { width:100%; height:100%; margin:0; overflow:hidden; overscroll-behavior:none; background:#1d2930; font-family:ui-serif,Georgia,serif; }
+  body { min-height:100svh; min-height:100dvh; touch-action:none; -webkit-tap-highlight-color:transparent; }
+  #world { position:fixed; inset:0; overflow:hidden; isolation:isolate; background:#6d8592; }
+  .biome { position:absolute; inset:-4%; background-position:center; background-size:cover; opacity:0; transform:scale(1.055) translate3d(var(--pan,0),0,0); transition:opacity 9s ease-in-out; will-change:opacity,transform; }
+  .biome.active { opacity:1; }
+  #tone { position:absolute; inset:0; z-index:3; pointer-events:none; background:linear-gradient(180deg,rgba(18,28,38,.04),transparent 46%,rgba(31,36,25,.12)); mix-blend-mode:multiply; }
+  #mist { position:absolute; left:-15%; right:-15%; top:39%; height:18%; z-index:4; opacity:.16; filter:blur(22px); background:radial-gradient(ellipse at center,rgba(230,239,232,.72),transparent 66%); animation:breathe 13s ease-in-out infinite alternate; pointer-events:none; }
+  #riderWrap { position:absolute; z-index:7; left:27%; bottom:9.5%; width:clamp(230px,29vw,470px); aspect-ratio:418/470; transform:translateX(-50%); filter:drop-shadow(0 14px 10px rgba(22,26,19,.32)); transition:left 1.4s ease,filter 2s ease; }
+  #rider { width:100%; height:100%; object-fit:contain; object-position:center bottom; user-select:none; -webkit-user-drag:none; }
+  #riderWrap.walking { animation:riderBreath 1.35s ease-in-out infinite; }
+  #riderWrap.trotting { animation:riderBreath .72s ease-in-out infinite; }
+  #foregroundShade { position:absolute; inset:auto 0 0; height:26%; z-index:8; pointer-events:none; background:linear-gradient(0deg,rgba(12,20,17,.14),transparent); }
+  #grain { position:absolute; inset:0; z-index:9; opacity:.05; pointer-events:none; mix-blend-mode:soft-light; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E"); }
+  #intro { position:absolute; inset:0; z-index:20; display:grid; place-content:center; padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left)); text-align:center; background:linear-gradient(180deg,rgba(13,23,29,.26),rgba(13,23,29,.1)); transition:opacity 2.2s ease; pointer-events:none; text-shadow:0 2px 18px rgba(10,19,25,.55); }
+  #intro.hidden { opacity:0; }
+  #intro h1 { margin:0; font-size:clamp(36px,6vw,84px); font-weight:400; letter-spacing:.08em; color:#f3ead1; white-space:nowrap; }
+  #intro p { max-width:46ch; margin:13px auto 0; font:400 clamp(13px,1.35vw,18px)/1.55 ui-sans-serif,system-ui,sans-serif; letter-spacing:.14em; color:rgba(247,240,220,.8); }
+  #hint { position:absolute; z-index:21; left:50%; bottom:max(4%,env(safe-area-inset-bottom)); transform:translateX(-50%); padding:9px 15px; border:1px solid rgba(255,255,255,.15); border-radius:999px; background:rgba(17,29,33,.28); backdrop-filter:blur(12px); color:var(--ui); font:500 12px/1.2 ui-sans-serif,system-ui,sans-serif; letter-spacing:.08em; opacity:0; transition:opacity .5s ease; white-space:nowrap; pointer-events:none; }
+  #hint.show { opacity:.86; }
+  #status { position:absolute; z-index:21; top:max(3%,env(safe-area-inset-top)); right:max(3%,env(safe-area-inset-right)); max-width:70vw; color:rgba(245,238,218,.75); font:500 11px ui-sans-serif,system-ui,sans-serif; letter-spacing:.15em; text-align:right; text-transform:uppercase; opacity:.72; transition:opacity .6s; }
+  #controls { position:absolute; z-index:24; left:50%; bottom:max(18px,env(safe-area-inset-bottom)); display:none; gap:8px; align-items:center; transform:translate(-50%,10px); opacity:0; transition:opacity .6s ease,transform .6s ease; }
+  #controls.ready { transform:translate(-50%,0); opacity:.92; }
+  #controls.ready.resting { opacity:.28; }
+  #controls button { min-width:54px; min-height:54px; padding:0 16px; border:1px solid rgba(255,255,255,.22); border-radius:999px; background:rgba(15,28,31,.44); box-shadow:0 8px 30px rgba(8,16,18,.16); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); color:var(--ui); font:600 18px ui-sans-serif,system-ui,sans-serif; touch-action:manipulation; }
+  #controls button[data-action="auto"] { min-width:72px; font-size:11px; letter-spacing:.12em; text-transform:uppercase; }
+  #controls button.active { background:rgba(205,184,132,.3); border-color:rgba(249,229,179,.52); }
+  #controls button:active { transform:scale(.94); background:rgba(224,204,153,.36); }
+  @keyframes riderBreath { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-2px)} }
+  @keyframes breathe { from{opacity:.09;transform:translateX(-1%)} to{opacity:.22;transform:translateX(1%)} }
+  @media (max-aspect-ratio:4/3) {
+    #riderWrap { left:32%; width:clamp(164px,46vw,270px); bottom:12%; }
+    #intro h1 { font-size:clamp(34px,10vw,54px); letter-spacing:.04em; }
+    #intro p { max-width:28ch; font-size:clamp(11px,3.4vw,15px); }
+  }
+  @media (pointer:coarse) {
+    #controls { display:flex; }
+    #hint { display:none; }
+    #status { top:max(18px,env(safe-area-inset-top)); right:max(16px,env(safe-area-inset-right)); font-size:10px; }
+  }
+  @media (pointer:coarse) and (orientation:landscape) {
+    #controls { bottom:max(10px,env(safe-area-inset-bottom)); }
+    #controls button { min-width:48px; min-height:48px; }
+  }
+  @media (prefers-reduced-motion:reduce) { * { animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; } }
+</style>
+</head>
+<body>
+<main id="world" aria-label="Созерцательное путешествие по казахской степи">
+  <div id="biome0" class="biome active"></div>
+  <div id="biome1" class="biome"></div>
+  <div id="mist"></div>
+  <div id="tone"></div>
+  <div id="riderWrap" class="walking"><img id="rider" alt="Всадник на лошади" decoding="async" draggable="false"></div>
+  <div id="foregroundShade"></div>
+  <div id="grain"></div>
+  <section id="intro"><h1>Жел тынысы</h1><p>ОТПУСТИ ПОВОДЬЯ — И СТЕПЬ ПОВЕДЁТ САМА</p></section>
+  <div id="status" role="status" aria-live="polite">автопоход · шаг</div>
+  <div id="hint">← замедлиться · → быстрее · ↓ остановиться · пробел — автопоход</div>
+  <nav id="controls" aria-label="Управление путешествием">
+    <button type="button" data-action="slower" aria-label="Замедлиться">−</button>
+    <button type="button" data-action="stop" aria-label="Остановиться">■</button>
+    <button type="button" data-action="auto" aria-label="Автопоход" aria-pressed="true">авто</button>
+    <button type="button" data-action="faster" aria-label="Ускориться">+</button>
+  </nav>
+</main>
+<script>
+(() => {
+  const root = 'assets/';
+  const biomeFormat = document.createElement('canvas').toDataURL('image/webp').startsWith('data:image/webp') ? 'webp' : 'png';
+  const biomes = [
+    root + `biomes/biome-open-steppe.${biomeFormat}`,
+    root + `biomes/biome-semi-desert.${biomeFormat}`,
+    root + `biomes/biome-river-grove.${biomeFormat}`
+  ];
+  const walkFrames = [0,1,2,3].map(n => `${root}characters/frames/frame-0${n}.png`);
+  const trotFrames = [4,5].map(n => `${root}characters/frames/frame-0${n}.png`);
+  const idleFrame = `${root}characters/frames/frame-06.png`;
+  const patFrame = `${root}characters/frames/frame-07.png`;
+  [...walkFrames, ...trotFrames, idleFrame, patFrame].forEach(src => { const i = new Image(); i.src = src; });
+
+  const world = document.querySelector('#world');
+  const layers = [document.querySelector('#biome0'), document.querySelector('#biome1')];
+  const rider = document.querySelector('#rider');
+  const riderWrap = document.querySelector('#riderWrap');
+  const intro = document.querySelector('#intro');
+  const hint = document.querySelector('#hint');
+  const status = document.querySelector('#status');
+  const controls = document.querySelector('#controls');
+  const autoButton = controls.querySelector('[data-action="auto"]');
+
+  let activeLayer = 0, biomeIndex = 0, auto = true, speed = .62, frame = 0;
+  let distance = 0, last = performance.now(), frameClock = 0, biomeClock = 0, hintTimer, controlsTimer;
+  layers[0].style.backgroundImage = `url("${biomes[0]}")`;
+  layers[1].style.backgroundImage = `url("${biomes[1]}")`;
+  rider.src = walkFrames[0];
+
+  function say(text) {
+    status.textContent = text;
+    status.style.opacity = '.9';
+    clearTimeout(hintTimer);
+    hint.classList.add('show');
+    hintTimer = setTimeout(() => { hint.classList.remove('show'); status.style.opacity = '.58'; }, 3600);
+  }
+
+  function modeLabel() {
+    if (speed === 0) return auto ? 'автопоход · привал' : 'ручной режим · привал';
+    return `${auto ? 'автопоход' : 'ручной режим'} · ${speed > .9 ? 'рысь' : 'шаг'}`;
+  }
+
+  function syncControls() {
+    autoButton.classList.toggle('active', auto);
+    autoButton.setAttribute('aria-pressed', String(auto));
+  }
+
+  function showControls() {
+    if (!matchMedia('(pointer:coarse)').matches) return;
+    controls.classList.add('ready');
+    controls.classList.remove('resting');
+    clearTimeout(controlsTimer);
+    controlsTimer = setTimeout(() => controls.classList.add('resting'), 7000);
+  }
+
+  function changeBiome() {
+    biomeIndex = (biomeIndex + 1) % biomes.length;
+    const next = 1 - activeLayer;
+    layers[next].style.backgroundImage = `url("${biomes[biomeIndex]}")`;
+    layers[next].classList.add('active');
+    layers[activeLayer].classList.remove('active');
+    activeLayer = next;
+  }
+
+  function setSpeed(value, automatic = false) {
+    speed = Math.max(0, Math.min(1.15, value));
+    if (!automatic) auto = false;
+    riderWrap.className = speed === 0 ? '' : speed > .9 ? 'trotting' : 'walking';
+    syncControls();
+    showControls();
+    say(modeLabel());
+  }
+
+  function toggleAuto() {
+    auto = !auto;
+    if (auto && speed === 0) speed = .62;
+    riderWrap.className = speed === 0 ? '' : speed > .9 ? 'trotting' : 'walking';
+    syncControls();
+    showControls();
+    say(modeLabel());
+  }
+
+  addEventListener('keydown', e => {
+    if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault();
+    if (e.code === 'ArrowRight') setSpeed(speed + .18);
+    if (e.code === 'ArrowLeft') setSpeed(speed - .18);
+    if (e.code === 'ArrowUp') setSpeed(1.02);
+    if (e.code === 'ArrowDown') setSpeed(0);
+    if (e.code === 'Space') toggleAuto();
+  }, {passive:false});
+
+  controls.addEventListener('pointerdown', e => {
+    const button = e.target.closest('button[data-action]');
+    if (!button) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const action = button.dataset.action;
+    if (action === 'slower') setSpeed(speed - .18);
+    if (action === 'stop') setSpeed(0);
+    if (action === 'auto') toggleAuto();
+    if (action === 'faster') setSpeed(speed + .18);
+  }, {passive:false});
+  world.addEventListener('pointerdown', showControls, {passive:true});
+
+  function tick(now) {
+    const dt = Math.min(.05, (now-last)/1000); last = now;
+    if (auto && speed > 0) speed += (.62-speed) * Math.min(1,dt*.45);
+    distance += speed * dt;
+    biomeClock += speed * dt;
+    frameClock += dt;
+    const pan = -2.2 + Math.sin(distance*.045)*1.1;
+    layers.forEach((layer,i) => layer.style.setProperty('--pan', `${pan + (i===activeLayer?0:.25)}%`));
+    if (speed === 0) {
+      rider.src = (Math.floor(now/6500)%5===4) ? patFrame : idleFrame;
+    } else {
+      const set = speed > .9 ? trotFrames : walkFrames;
+      const interval = speed > .9 ? .28 : .46;
+      if (frameClock >= interval) { frameClock = 0; frame = (frame+1)%set.length; rider.src = set[frame]; }
+    }
+    if (biomeClock > 30) { biomeClock = 0; changeBiome(); }
+    requestAnimationFrame(tick);
+  }
+
+  setTimeout(() => intro.classList.add('hidden'), 3400);
+  setTimeout(showControls, 3600);
+  setTimeout(() => say(modeLabel()), 4700);
+  setTimeout(() => { const i = new Image(); i.src = biomes[2]; }, 12000);
+  syncControls();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
